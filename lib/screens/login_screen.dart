@@ -16,8 +16,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isProcessing = false;
 
-  final String loginUrl = "http://localhost/relks/api/login";
-  final String getPlansUrl = "http://localhost/relks/api/detailsProduct";
+  final String loginUrl = "https://dev.relkselectricpower.com/api/login";
+  final String getPlansUrl = "https://dev.relkselectricpower.com/api/detailsProduct";
 
   Future<void> _handleLogin() async {
     final String email = _usernameController.text.trim();
@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
         },
       ).timeout(const Duration(seconds: 10));
 
-      print(planningsResponse.body);
+     
       if (planningsResponse.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(planningsResponse.body);
         final Map<String, dynamic> dataPayload = responseData['data'] ?? {};

@@ -103,7 +103,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     setState(() => _isProcessing = true);
 
-    const String submitUrl = "http://127.0.0.1:8000/api/attendance/check-in";
+    const String submitUrl = "https://dev.relkselectricpower.com/api/attendance/check-in";
 
     try {
       var request = http.MultipartRequest('POST', Uri.parse(submitUrl));

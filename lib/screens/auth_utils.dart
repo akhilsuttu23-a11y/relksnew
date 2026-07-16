@@ -4,7 +4,7 @@ import 'login_screen.dart';
 
 class AuthUtils {
   static Future<void> logout(BuildContext context, String userToken) async {
-    final String logoutUrl = "http://localhost/relks/api/logout";
+    final String logoutUrl = "https://dev.relkselectricpower.com/api/logout";
 
     showDialog(
       context: context,
