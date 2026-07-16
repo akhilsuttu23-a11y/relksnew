@@ -1,0 +1,45 @@
+name: Flutter Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the code from repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Java (Required for Android builds)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Set up Flutter (Uses latest stable to match your project dependencies)
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # 4. Get dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Build the APK (Bypasses keystore requirements and handles custom icons)
+      - name: Build APK
+        run: flutter build apk --debug --no-tree-shake-icons
+
+      # 6. Upload the built file so you can download it
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
