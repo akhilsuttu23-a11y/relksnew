@@ -60,17 +60,31 @@ class _CheckInScreenState extends State<CheckInScreen> {
     }
   }
 
-  Future<Position?> _determinePosition() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return null;
+  
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return null;
-    }
-    return await Geolocator.getCurrentPosition();
+  Future<Position?> _determinePosition() async {
+  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) return null;
+
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) return null;
   }
+  
+  if (permission == LocationPermission.deniedForever) {
+    return null;
+  }
+
+  // Use Settings to specify accuracy and a strict timeout to prevent endless hanging on real devices
+  return await Geolocator.getCurrentPosition(
+    desiredAccuracy: LocationAccuracy.high,
+    timeLimit: const Duration(seconds: 10),
+  ).catchError((e) {
+    debugPrint("Location error: $e");
+    return null;
+  });
+}
 
   Future<void> _captureSelfie() async {
     try {
