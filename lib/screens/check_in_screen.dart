@@ -76,7 +76,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
     return null;
   }
 
-  // Use Settings to specify accuracy and a strict timeout to prevent endless hanging on real devices
   return await Geolocator.getCurrentPosition(
     desiredAccuracy: LocationAccuracy.high,
     timeLimit: const Duration(seconds: 10),
@@ -147,6 +146,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
+      print(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         final Map<String, dynamic> dataPayload = jsonResponse['data'] ?? {};
