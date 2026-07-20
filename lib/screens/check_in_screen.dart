@@ -216,7 +216,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: NetworkImage("https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070"),
+            image: NetworkImage("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"),
             fit: BoxFit.cover,
           ),
         ),
