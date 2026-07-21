@@ -123,7 +123,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     setState(() => _isProcessing = true);
 
-    const String submitUrl = ApiConstants.checkIn;
+    final String submitUrl = ApiConstants.checkIn;
 
     try {
       var request = http.MultipartRequest('POST', Uri.parse(submitUrl));
@@ -405,7 +405,14 @@ class _CameraPreviewDialogState extends State<_CameraPreviewDialog> {
                   height: 300,
                   width: double.infinity,
                   child: ClipRect(
-                    child: CameraPreview(_controller),
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _controller.value.previewSize?.height ?? 300,
+                        height: _controller.value.previewSize?.width ?? 300,
+                        child: CameraPreview(_controller),
+                      ),
+                    ),
                   ),
                 );
               } else {
