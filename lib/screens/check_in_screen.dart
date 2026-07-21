@@ -2,11 +2,9 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; 
-import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
-import 'dart:io' as io;
+import 'package:camera/camera.dart';
 
 class CheckInScreen extends StatefulWidget {
   final String employeeId;
@@ -37,7 +35,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
   double? _latitude;
   double? _longitude;
   bool _isProcessing = false;
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -83,22 +80,37 @@ class _CheckInScreenState extends State<CheckInScreen> {
     });
   }
 
-  Future<void> _captureSelfie() async {
+  // 🔴 Camera Package ഉപയോഗിച്ച് നിർബന്ധമായും FRONT CAMERA തുറക്കാനുള്ള ഫംഗ്ഷൻ
+  Future<void> _captureSelfieWithCameraPackage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
+      // 1. അവൈലബിൾ ക്യാമറകൾ എടുക്കുക
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        _showErrorDialog("No cameras found on this device.");
+        return;
+      }
+
+      // 2. Front Camera കണ്ടെത്തുക
+      final frontCamera = cameras.firstWhere(
+        (cam) => cam.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
       );
 
-      if (pickedFile != null) {
-        final bytes = await pickedFile.readAsBytes(); 
+      // 3. Camera Dialog വഴി ഫോട്ടോ ക്യാപ്ചർ ചെയ്യുക
+      final XFile? capturedFile = await showDialog<XFile>(
+        context: context,
+        builder: (context) => _CameraPreviewDialog(camera: frontCamera),
+      );
+
+      if (capturedFile != null) {
+        final bytes = await capturedFile.readAsBytes();
         setState(() {
-          _selfieFile = pickedFile;
-          _selfieImageBytes = bytes; 
+          _selfieFile = capturedFile;
+          _selfieImageBytes = bytes;
         });
       }
     } catch (e) {
-      _showErrorDialog("Image Capture Error: $e");
+      _showErrorDialog("Camera Error: $e");
     }
   }
 
@@ -144,7 +156,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
-      print(response.body);
+      debugPrint(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         final Map<String, dynamic> dataPayload = jsonResponse['data'] ?? {};
@@ -247,7 +259,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 child: Column(
                   children: [
                     GestureDetector(
-                      onTap: _captureSelfie,
+                      onTap: _captureSelfieWithCameraPackage,
                       child: Container(
                         width: 160,
                         height: 160,
@@ -263,9 +275,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                           ],
                           image: _selfieImageBytes != null
                               ? DecorationImage(
-                                  image: kIsWeb
-                                      ? MemoryImage(_selfieImageBytes!)
-                                      : FileImage(io.File(_selfieFile!.path)),
+                                  image: MemoryImage(_selfieImageBytes!),
                                   fit: BoxFit.cover,
                                 )
                               : null,
@@ -341,6 +351,103 @@ class _CheckInScreenState extends State<CheckInScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// 🔴 FRONT CAMERA PREVIEW DIALOG WIDGET
+class _CameraPreviewDialog extends StatefulWidget {
+  final CameraDescription camera;
+
+  const _CameraPreviewDialog({required this.camera});
+
+  @override
+  State<_CameraPreviewDialog> createState() => _CameraPreviewDialogState();
+}
+
+class _CameraPreviewDialogState extends State<_CameraPreviewDialog> {
+  late CameraController _controller;
+  late Future<void> _initializeControllerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = CameraController(
+      widget.camera,
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
+    _initializeControllerFuture = _controller.initialize();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              "Take Selfie",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ),
+          FutureBuilder<void>(
+            future: _initializeControllerFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return SizedBox(
+                  height: 300,
+                  width: double.infinity,
+                  child: ClipRect(
+                    child: CameraPreview(_controller),
+                  ),
+                );
+              } else {
+                return const SizedBox(
+                  height: 300,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                FloatingActionButton(
+                  backgroundColor: const Color(0xFF1E6FD9),
+                  onPressed: () async {
+                    try {
+                      await _initializeControllerFuture;
+                      final image = await _controller.takePicture();
+                      if (context.mounted) {
+                        Navigator.pop(context, image);
+                      }
+                    } catch (e) {
+                      debugPrint("Error taking picture: $e");
+                    }
+                  },
+                  child: const Icon(Icons.camera_alt, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
