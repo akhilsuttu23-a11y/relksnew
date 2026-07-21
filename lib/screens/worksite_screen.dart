@@ -73,7 +73,6 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
     }).toList();
   }
 
-  
   String _formatDateTimeString(dynamic timeString) {
     if (timeString == null) return "--/--/---- --:-- --";
     try {
@@ -103,7 +102,7 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
     final displayLogs = _todayLogs;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFFF4F6F9),
       appBar: AppBar(
         title: Text(
           isSignOutAction ? "Active Shift Detail" : "Select Work Plan",
@@ -115,362 +114,343 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
             tooltip: 'Logout',
             onPressed: () => AuthUtils.logout(context, widget.userToken),
           ),
+          const SizedBox(width: 8),
         ],
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: const Color(0xFF1E6FD9),
+        elevation: 2,
         automaticallyImplyLeading: false,
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: NetworkImage("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.account_circle_rounded, color: Color(0xFF1E6FD9), size: 30),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Employee Name: ${widget.workerName}",
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E1F21)),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.account_circle_rounded, color: Color(0xFF1E6FD9), size: 28),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                "Employee Name: ${widget.workerName}",
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E1F21)),
-                              ),
-                            ),
-                          ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isSignOutAction ? Colors.red.shade50 : Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isSignOutAction ? Colors.red.shade300 : Colors.blue.shade300, width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isSignOutAction ? Icons.logout_rounded : Icons.check_circle_outline_rounded,
+                      color: isSignOutAction ? Colors.red.shade800 : Colors.blue.shade800,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isSignOutAction ? "SELECTED STATUS: ACTIVE LOGGED IN" : "SELECTED STATUS: READY TO SIGN-IN",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: isSignOutAction ? Colors.red.shade900 : Colors.blue.shade900,
                         ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isSignOutAction ? Colors.red.shade50 : Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: isSignOutAction ? Colors.red.shade300 : Colors.blue.shade300, width: 1.5),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isSignOutAction ? Icons.logout_rounded : Icons.check_circle_outline_rounded,
-                                color: isSignOutAction ? Colors.red.shade800 : Colors.blue.shade800,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  isSignOutAction ? "SELECTED STATUS: ACTIVE LOGGED IN" : "SELECTED STATUS: READY TO SIGN-IN",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: isSignOutAction ? Colors.red.shade900 : Colors.blue.shade900,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                isSignOutAction
+                    ? "Your currently checked-in project (Sign-Out Required):"
+                    : "Select the project allocation list you are checking into today:",
+                style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              
+              // 🔴 മാറിയ ഭാഗം: പ്രോജക്റ്റ് ലിസ്റ്റ് ബോക്സിന് fixed height നൽകി Scroll ആക്കി
+              Container(
+                height: 250, // 👈 Scroll Area-യുടെ Height 
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black12),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: widget.availablePlans.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text(
+                            "No projects assigned today.",
+                            style: TextStyle(color: Colors.black45, fontStyle: FontStyle.italic),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          isSignOutAction
-                              ? "Your currently checked-in project (Sign-Out Required):"
-                              : "Select the project allocation list you are checking into today:",
-                          style: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.black12),
-                          ),
-                          child: widget.availablePlans.isEmpty
-                              ? const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: Text(
-                                      "No projects assigned today.",
-                                      style: TextStyle(color: Colors.black45, fontStyle: FontStyle.italic),
-                                    ),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  shrinkWrap: true,
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                  itemCount: widget.availablePlans.length,
-                                  itemBuilder: (context, index) {
-                                    final plan = widget.availablePlans[index];
-                                    final String planId = plan['id'].toString();
+                      )
+                    : ListView.separated(
+                        itemCount: widget.availablePlans.length,
+                        separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.black12),
+                        itemBuilder: (context, index) {
+                          final plan = widget.availablePlans[index];
+                          final String planId = plan['id'].toString();
 
-                                    final bool isChecked = _selectedPlanIds.contains(planId);
-                                    final bool isAlreadyCheckedIn = _globallyActiveIds.contains(planId);
+                          final bool isChecked = _selectedPlanIds.contains(planId);
+                          final bool isAlreadyCheckedIn = _globallyActiveIds.contains(planId);
 
-                                    return CheckboxListTile(
-                                      title: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            plan['title'].toString(),
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: isAlreadyCheckedIn ? const Color(0xFFD9222A) : const Color(0xFF1E1F21),
-                                            ),
-                                          ),
-                                          if (isAlreadyCheckedIn)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 2.0),
-                                              child: Text(
-                                                "Logged In (Awaiting Sign-Out)",
-                                                style: TextStyle(color: Colors.red.shade700, fontSize: 11, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      activeColor: isAlreadyCheckedIn ? const Color(0xFFD9222A) : const Color(0xFF1E6FD9),
-                                      value: isChecked,
-                                      controlAffinity: ListTileControlAffinity.leading,
-                                      onChanged: (bool? checked) {
-                                        setState(() {
-                                          if (checked == true) {
-                                            _selectedPlanIds = [planId];
-                                          } else {
-                                            _selectedPlanIds.clear();
-                                          }
-                                        });
-                                      },
-                                    );
-                                  },
-                                ),
-                        ),
-                        const SizedBox(height: 24),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              colors: isSignOutAction
-                                  ? [const Color(0xFFD9222A), const Color(0xFF99181E)]
-                                  : [const Color(0xFF1E6FD9), const Color(0xFF0F4C99)],
-                            ),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              if (_selectedPlanIds.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Action Denied: You must select a project layout from the list before proceeding."),
-                                    backgroundColor: Colors.amberAccent,
-                                  ),
-                                );
-                                return;
-                              }
-
-                              final String currentSelectedId = _selectedPlanIds.first;
-                              final bool handlingSignOut = _globallyActiveIds.contains(currentSelectedId);
-
-                              final dynamic result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CheckInScreen(
-                                    employeeId: widget.employeeId,
-                                    workerId: widget.workerId,
-                                    selectedPlanIds: [currentSelectedId],
-                                    attendanceId: handlingSignOut ? _attendanceId : 0,
-                                    selectedPlanTitle: widget.availablePlans.firstWhere(
-                                      (p) => p['id'].toString() == currentSelectedId,
-                                      orElse: () => {'title': 'Project Plan'},
-                                    )['title'],
-                                    userToken: widget.userToken,
-                                  ),
-                                ),
-                              );
-
-                              if (result != null && result is Map<String, dynamic>) {
-                                if (!mounted) return;
-                                
-                                showDialog(
-                                  context: context,
-                                  barrierDismissible: false,
-                                  builder: (context) => const Center(child: CircularProgressIndicator()),
-                                );
-
-                                try {
-                                  final String getPlansUrl = "https://dev.relkselectricpower.com/api/detailsProduct";
-                                  final planningsResponse = await http.post(
-                                    Uri.parse(getPlansUrl),
-                                    headers: {
-                                      "Accept": "application/json",
-                                      "Authorization": "Bearer ${widget.userToken}",
-                                    },
-                                  ).timeout(const Duration(seconds: 10));
-
-                                  if (mounted) Navigator.pop(context);
-
-                                  if (planningsResponse.statusCode == 200) {
-                                    final Map<String, dynamic> responseData = jsonDecode(planningsResponse.body);
-                                    final Map<String, dynamic> dataPayload = responseData['data'] ?? {};
-
-                                    final List<dynamic> markingsList = dataPayload['today_markings'] ?? [];
-                                    List<Map<String, dynamic>> parsedMarkings = markingsList.map((item) {
-                                      return {
-                                        "title": item['title'] ?? "Work Plan",
-                                        "in_time": item['in_time'],
-                                        "out_time": item['out_time'],
-                                      };
-                                    }).toList();
-
-                                    int activeAttendanceId = int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ?? 0;
-                                    List<String> activePlanningIds = List<String>.from(
-                                      (dataPayload['active_planning_ids'] as List? ?? []).map((e) => e.toString())
-                                    );
-
-                                    setState(() {
-                                      _attendanceId = activeAttendanceId;
-                                      _globallyActiveIds = activePlanningIds;
-                                      _allLogs = parsedMarkings;
-                                      
-                                      if (_globallyActiveIds.isNotEmpty) {
-                                        _selectedPlanIds = [_globallyActiveIds.first];
-                                      } else {
-                                        _selectedPlanIds.clear();
-                                      }
-                                    });
-                                  }
-                                } catch (e) {
-                                  if (mounted) Navigator.pop(context);
-                                  debugPrint("Error updating layout: $e");
-                                }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                          return CheckboxListTile(
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isSignOutAction ? "PROCEED TO SYSTEM SIGN-OUT" : "PROCEED TO SYSTEM SIGN-IN",
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15),
+                                  plan['title'].toString(),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isAlreadyCheckedIn ? const Color(0xFFD9222A) : const Color(0xFF1E1F21),
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
-                                Icon(isSignOutAction ? Icons.logout_rounded : Icons.login_rounded, color: Colors.white, size: 18),
+                                if (isAlreadyCheckedIn)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2.0),
+                                    child: Text(
+                                      "Logged In (Awaiting Sign-Out)",
+                                      style: TextStyle(color: Colors.red.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
                               ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        const Divider(color: Colors.black26),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            const Icon(Icons.history_toggle_off_rounded, color: Color(0xFF1E6FD9), size: 22),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Shift Log History (${displayLogs.length})",
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E1F21)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        displayLogs.isEmpty
-                            ? Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Text(
-                                  "No matching attendance logs recorded.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.black45, fontSize: 13, fontStyle: FontStyle.italic),
-                                ),
-                              )
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: displayLogs.length,
-                                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                                itemBuilder: (context, index) {
-                                  final marking = displayLogs[index];
-                                  final bool isActiveLog = marking['out_time'] == null || marking['out_time'].toString().isEmpty;
+                            activeColor: isAlreadyCheckedIn ? const Color(0xFFD9222A) : const Color(0xFF1E6FD9),
+                            value: isChecked,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (bool? checked) {
+                              setState(() {
+                                if (checked == true) {
+                                  _selectedPlanIds = [planId];
+                                } else {
+                                  _selectedPlanIds.clear();
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+              ),
 
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.9),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.black12),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          marking['title'] ?? "Worksite Plan",
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Wrap(
-                                          spacing: 6,
-                                          runSpacing: 6,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green.shade50,
-                                                borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(color: Colors.green.shade200),
-                                              ),
-                                              child: Text(
-                                                "IN: ${_formatDateTimeString(marking['in_time'])}",
-                                                style: TextStyle(color: Colors.green.shade800, fontSize: 11, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: isActiveLog ? Colors.red.shade50 : Colors.orange.shade50,
-                                                borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(color: isActiveLog ? Colors.red.shade200 : Colors.orange.shade200),
-                                              ),
-                                              child: Text(
-                                                isActiveLog ? "ACTIVE SHIFT" : "OUT: ${_formatDateTimeString(marking['out_time'])}",
-                                                style: TextStyle(color: isActiveLog ? Colors.red.shade800 : Colors.orange.shade800, fontSize: 11, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                      ],
-                    ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: isSignOutAction
+                        ? [const Color(0xFFD9222A), const Color(0xFF99181E)]
+                        : [const Color(0xFF1E6FD9), const Color(0xFF0F4C99)],
+                  ),
+                ),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (_selectedPlanIds.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Action Denied: You must select a project layout from the list before proceeding."),
+                          backgroundColor: Colors.amberAccent,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final String currentSelectedId = _selectedPlanIds.first;
+                    final bool handlingSignOut = _globallyActiveIds.contains(currentSelectedId);
+
+                    final dynamic result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CheckInScreen(
+                          employeeId: widget.employeeId,
+                          workerId: widget.workerId,
+                          selectedPlanIds: [currentSelectedId],
+                          attendanceId: handlingSignOut ? _attendanceId : 0,
+                          selectedPlanTitle: widget.availablePlans.firstWhere(
+                            (p) => p['id'].toString() == currentSelectedId,
+                            orElse: () => {'title': 'Project Plan'},
+                          )['title'],
+                          userToken: widget.userToken,
+                        ),
+                      ),
+                    );
+
+                    if (result != null && result is Map<String, dynamic>) {
+                      if (!mounted) return;
+                      
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(child: CircularProgressIndicator()),
+                      );
+
+                      try {
+                        final String getPlansUrl = "https://dev.relkselectricpower.com/api/detailsProduct";
+                        final planningsResponse = await http.post(
+                          Uri.parse(getPlansUrl),
+                          headers: {
+                            "Accept": "application/json",
+                            "Authorization": "Bearer ${widget.userToken}",
+                          },
+                        ).timeout(const Duration(seconds: 10));
+
+                        if (mounted) Navigator.pop(context);
+
+                        if (planningsResponse.statusCode == 200) {
+                          final Map<String, dynamic> responseData = jsonDecode(planningsResponse.body);
+                          final Map<String, dynamic> dataPayload = responseData['data'] ?? {};
+
+                          final List<dynamic> markingsList = dataPayload['today_markings'] ?? [];
+                          List<Map<String, dynamic>> parsedMarkings = markingsList.map((item) {
+                            return {
+                              "title": item['title'] ?? "Work Plan",
+                              "in_time": item['in_time'],
+                              "out_time": item['out_time'],
+                            };
+                          }).toList();
+
+                          int activeAttendanceId = int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ?? 0;
+                          List<String> activePlanningIds = List<String>.from(
+                            (dataPayload['active_planning_ids'] as List? ?? []).map((e) => e.toString())
+                          );
+
+                          setState(() {
+                            _attendanceId = activeAttendanceId;
+                            _globallyActiveIds = activePlanningIds;
+                            _allLogs = parsedMarkings;
+                            
+                            if (_globallyActiveIds.isNotEmpty) {
+                              _selectedPlanIds = [_globallyActiveIds.first];
+                            } else {
+                              _selectedPlanIds.clear();
+                            }
+                          });
+                        }
+                      } catch (e) {
+                        if (mounted) Navigator.pop(context);
+                        debugPrint("Error updating layout: $e");
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        isSignOutAction ? "PROCEED TO SYSTEM SIGN-OUT" : "PROCEED TO SYSTEM SIGN-IN",
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(isSignOutAction ? Icons.logout_rounded : Icons.login_rounded, color: Colors.white, size: 18),
+                    ],
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 28),
+              const Divider(color: Colors.black26),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.history_toggle_off_rounded, color: Color(0xFF1E6FD9), size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Shift Log History (${displayLogs.length})",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E1F21)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              displayLogs.isEmpty
+                  ? Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: const Text(
+                        "No matching attendance logs recorded.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.black45, fontSize: 13, fontStyle: FontStyle.italic),
+                      ),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: displayLogs.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final marking = displayLogs[index];
+                        final bool isActiveLog = marking['out_time'] == null || marking['out_time'].toString().isEmpty;
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                marking['title'] ?? "Worksite Plan",
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade50,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.green.shade200),
+                                    ),
+                                    child: Text(
+                                      "IN: ${_formatDateTimeString(marking['in_time'])}",
+                                      style: TextStyle(color: Colors.green.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isActiveLog ? Colors.red.shade50 : Colors.orange.shade50,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: isActiveLog ? Colors.red.shade200 : Colors.orange.shade200),
+                                    ),
+                                    child: Text(
+                                      isActiveLog ? "ACTIVE SHIFT" : "OUT: ${_formatDateTimeString(marking['out_time'])}",
+                                      style: TextStyle(color: isActiveLog ? Colors.red.shade800 : Colors.orange.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ],
           ),
         ),
       ),
