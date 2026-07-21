@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'login_screen.dart';
+import '../constatnts/api_constants.dart';
+
 
 class AuthUtils {
   static Future<void> logout(BuildContext context, String userToken) async {
-    final String logoutUrl = "https://dev.relkselectricpower.com/api/logout";
+    final String logoutUrl =  ApiConstants.logout;
 
     showDialog(
       context: context,

@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
+import '../constatnts/api_constants.dart';
 
 class CheckInScreen extends StatefulWidget {
   final String employeeId;
@@ -122,7 +123,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     setState(() => _isProcessing = true);
 
-    const String submitUrl = "https://dev.relkselectricpower.com/api/attendance/check-in";
+    const String submitUrl = ApiConstants.checkIn;
 
     try {
       var request = http.MultipartRequest('POST', Uri.parse(submitUrl));

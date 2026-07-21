@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'check_in_screen.dart';
 import 'auth_utils.dart';
+import '../constatnts/api_constants.dart';
+
 
 class SelectWorksiteScreen extends StatefulWidget {
   final String employeeId;
@@ -296,7 +298,7 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                       );
 
                       try {
-                        final String getPlansUrl = "https://dev.relkselectricpower.com/api/detailsProduct";
+                        final String getPlansUrl = ApiConstants.detailsProduct;
                         final planningsResponse = await http.post(
                           Uri.parse(getPlansUrl),
                           headers: {

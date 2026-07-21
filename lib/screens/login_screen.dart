@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'worksite_screen.dart';
+import '../constatnts/api_constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,9 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isProcessing = false;
 
-  final String loginUrl = "https://dev.relkselectricpower.com/api/login";
-  final String getPlansUrl =
-      "https://dev.relkselectricpower.com/api/detailsProduct";
+  final String loginUrl = ApiConstants.login;
+  final String getPlansUrl =ApiConstants.detailsProduct;
 
   Future<void> _handleLogin() async {
     final String email = _usernameController.text.trim();
