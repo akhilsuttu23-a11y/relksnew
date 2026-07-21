@@ -80,23 +80,19 @@ class _CheckInScreenState extends State<CheckInScreen> {
     });
   }
 
-  // 🔴 Camera Package ഉപയോഗിച്ച് നിർബന്ധമായും FRONT CAMERA തുറക്കാനുള്ള ഫംഗ്ഷൻ
   Future<void> _captureSelfieWithCameraPackage() async {
     try {
-      // 1. അവൈലബിൾ ക്യാമറകൾ എടുക്കുക
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         _showErrorDialog("No cameras found on this device.");
         return;
       }
 
-      // 2. Front Camera കണ്ടെത്തുക
       final frontCamera = cameras.firstWhere(
         (cam) => cam.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
 
-      // 3. Camera Dialog വഴി ഫോട്ടോ ക്യാപ്ചർ ചെയ്യുക
       final XFile? capturedFile = await showDialog<XFile>(
         context: context,
         builder: (context) => _CameraPreviewDialog(camera: frontCamera),
@@ -356,7 +352,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
   }
 }
 
-// 🔴 FRONT CAMERA PREVIEW DIALOG WIDGET
 class _CameraPreviewDialog extends StatefulWidget {
   final CameraDescription camera;
 

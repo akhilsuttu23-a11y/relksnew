@@ -175,9 +175,8 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
               ),
               const SizedBox(height: 12),
               
-              // 🔴 മാറിയ ഭാഗം: പ്രോജക്റ്റ് ലിസ്റ്റ് ബോക്സിന് fixed height നൽകി Scroll ആക്കി
               Container(
-                height: 250, // 👈 Scroll Area-യുടെ Height 
+                height: 250, 
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
