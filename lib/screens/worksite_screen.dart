@@ -6,7 +6,6 @@ import 'check_in_screen.dart';
 import 'auth_utils.dart';
 import '../constatnts/api_constants.dart';
 
-
 class SelectWorksiteScreen extends StatefulWidget {
   final String employeeId;
   final String workerId;
@@ -102,6 +101,7 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
   Widget build(BuildContext context) {
     final bool isSignOutAction = _isCurrentActionSignOut;
     final displayLogs = _todayLogs;
+    final bool hasActiveShift = _globallyActiveIds.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -157,7 +157,9 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        isSignOutAction ? "SELECTED STATUS: ACTIVE LOGGED IN" : "SELECTED STATUS: READY TO SIGN-IN",
+                        isSignOutAction
+                            ? "STATUS: ACTIVE SHIFT (Sign-Out Required)"
+                            : "STATUS: READY TO SIGN-IN",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -171,7 +173,7 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
               const SizedBox(height: 20),
               Text(
                 isSignOutAction
-                    ? "Your currently checked-in project (Sign-Out Required):"
+                    ? "You must sign out of your current project before starting another:"
                     : "Select the project allocation list you are checking into today:",
                 style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600),
               ),
@@ -223,7 +225,7 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                                   Padding(
                                     padding: const EdgeInsets.only(top: 2.0),
                                     child: Text(
-                                      "Logged In (Awaiting Sign-Out)",
+                                      "Active Shift (Sign-Out Required)",
                                       style: TextStyle(color: Colors.red.shade700, fontSize: 11, fontWeight: FontWeight.bold),
                                     ),
                                   ),
@@ -233,11 +235,23 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                             value: isChecked,
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (bool? checked) {
+                              if (hasActiveShift && !isAlreadyCheckedIn) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Action Blocked: Please sign out of your current active work first."),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                                return;
+                              }
+
                               setState(() {
                                 if (checked == true) {
                                   _selectedPlanIds = [planId];
                                 } else {
-                                  _selectedPlanIds.clear();
+                                  if (!hasActiveShift) {
+                                    _selectedPlanIds.clear();
+                                  }
                                 }
                               });
                             },
@@ -270,6 +284,16 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
 
                     final String currentSelectedId = _selectedPlanIds.first;
                     final bool handlingSignOut = _globallyActiveIds.contains(currentSelectedId);
+
+                    if (hasActiveShift && !handlingSignOut) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Action Denied: You must complete sign-out of your active work first."),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
 
                     final dynamic result = await Navigator.push(
                       context,
