@@ -16,9 +16,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isProcessing = false;
+  bool _isObscured = true;
 
   final String loginUrl = ApiConstants.login;
-  final String getPlansUrl =ApiConstants.detailsProduct;
+  final String getPlansUrl = ApiConstants.detailsProduct;
 
   Future<void> _handleLogin() async {
     final String email = _usernameController.text.trim();
@@ -66,12 +67,12 @@ class _LoginScreenState extends State<LoginScreen> {
           )
           .timeout(const Duration(seconds: 10));
 
-      print(planningsResponse.body);
       if (planningsResponse.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(
-          planningsResponse.body,
-        );
+        final Map<String, dynamic> responseData = jsonDecode(planningsResponse.body);
         final Map<String, dynamic> dataPayload = responseData['data'] ?? {};
+
+        // Parse pending previous signouts count
+        int pendingCount = int.tryParse(dataPayload['pending_previous_signouts_count']?.toString() ?? '0') ?? 0;
 
         final List<dynamic> planningsList = dataPayload['plannings'] ?? [];
         List<Map<String, dynamic>> parsedPlans = planningsList.map((item) {
@@ -90,8 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
           };
         }).toList();
 
-        int activeAttendanceId =
-            int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ?? 0;
+        int activeAttendanceId = int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ?? 0;
 
         String? attendanceInTime = dataPayload['in_time']?.toString();
         if (activeAttendanceId > 0 && attendanceInTime != null) {
@@ -131,6 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 todayMarkings: parsedMarkings,
                 initialAttendanceId: activeAttendanceId,
                 initialActivePlanningIds: activePlanningIds,
+                pendingPreviousSignoutsCount: pendingCount,
               ),
             ),
           );
@@ -152,15 +153,12 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text),
-        backgroundColor: isError
-            ? const Color(0xFFD9222A)
-            : const Color(0xFF1E6FD9),
+        backgroundColor: isError ? const Color(0xFFD9222A) : const Color(0xFF1E6FD9),
       ),
     );
   }
 
   @override
-  bool _isObscured = true;
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -173,7 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 2,
         centerTitle: true,
       ),
-
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -204,12 +201,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
                 TextField(
                   controller: _passwordController,
-                  // 2. Pass the variable here instead of hardcoded 'true'
                   obscureText: _isObscured,
                   decoration: InputDecoration(
                     labelText: "Password",
@@ -217,7 +211,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       Icons.lock_rounded,
                       color: Color(0xFF1E6FD9),
                     ),
-                    // 3. Add the toggle button in suffixIcon
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isObscured ? Icons.visibility_off : Icons.visibility,

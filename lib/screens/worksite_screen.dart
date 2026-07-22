@@ -15,6 +15,7 @@ class SelectWorksiteScreen extends StatefulWidget {
   final List<Map<String, dynamic>> todayMarkings;
   final int initialAttendanceId;
   final List<String> initialActivePlanningIds;
+  final int pendingPreviousSignoutsCount;
 
   const SelectWorksiteScreen({
     super.key,
@@ -26,6 +27,7 @@ class SelectWorksiteScreen extends StatefulWidget {
     required this.todayMarkings,
     this.initialAttendanceId = 0,
     this.initialActivePlanningIds = const [],
+    this.pendingPreviousSignoutsCount = 0,
   });
 
   @override
@@ -37,12 +39,14 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
   late List<String> _selectedPlanIds;
   late List<Map<String, dynamic>> _allLogs;
   late List<String> _globallyActiveIds;
+  late int _pendingSignoutsCount;
 
   @override
   void initState() {
     super.initState();
     _attendanceId = widget.initialAttendanceId;
     _allLogs = List<Map<String, dynamic>>.from(widget.todayMarkings);
+    _pendingSignoutsCount = widget.pendingPreviousSignoutsCount;
     _globallyActiveIds = widget.initialActivePlanningIds
         .map((e) => e.toString())
         .toList();
@@ -141,6 +145,8 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                 ],
               ),
               const SizedBox(height: 16),
+
+              // Status Header
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -170,6 +176,36 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                   ],
                 ),
               ),
+
+              // Warning Banner for previous unclosed shifts
+              if (_pendingSignoutsCount > 0) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.shade700, width: 1.2),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900, size: 24),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          "Warning: You have $_pendingSignoutsCount pending sign-out(s) from previous days.",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 20),
               Text(
                 isSignOutAction
@@ -347,12 +383,14 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                           }).toList();
 
                           int activeAttendanceId = int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ?? 0;
+                          int pendingCount = int.tryParse(dataPayload['pending_previous_signouts_count']?.toString() ?? '0') ?? 0;
                           List<String> activePlanningIds = List<String>.from(
                             (dataPayload['active_planning_ids'] as List? ?? []).map((e) => e.toString())
                           );
 
                           setState(() {
                             _attendanceId = activeAttendanceId;
+                            _pendingSignoutsCount = pendingCount;
                             _globallyActiveIds = activePlanningIds;
                             _allLogs = parsedMarkings;
                             
