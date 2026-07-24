@@ -113,7 +113,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   Future<void> _submitCheckInOut() async {
     if (_selfieFile == null || _selfieImageBytes == null) {
-      await _showErrorDialog("Capture image verification first.");
+      await _showErrorDialog("Capture Photo for verification first.");
       return;
     }
     if (_latitude == null || _longitude == null) {
@@ -123,7 +123,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     setState(() => _isProcessing = true);
 
-    final String submitUrl = ApiConstants.checkIn;
+    final String submitUrl = ApiConstants.checkIn; 
 
     try {
       var request = http.MultipartRequest('POST', Uri.parse(submitUrl));
@@ -135,12 +135,19 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
       request.fields['attendance_id'] = widget.attendanceId.toString();
       request.fields['employee_id'] = widget.employeeId;
-      request.fields['worker_id'] = widget.workerId;
+      if (widget.workerId.isNotEmpty) {
+        request.fields['worker_id'] = widget.workerId;
+      }
       request.fields['latitude'] = _latitude.toString();
       request.fields['longitude'] = _longitude.toString();
 
-      for (int i = 0; i < widget.selectedPlanIds.length; i++) {
-        request.fields['planning_id[$i]'] = widget.selectedPlanIds[i];
+      if (widget.selectedPlanIds.isNotEmpty) {
+        for (int i = 0; i < widget.selectedPlanIds.length; i++) {
+          request.fields['planning_id[$i]'] = widget.selectedPlanIds[i];
+          request.fields['manager_task_id[$i]'] = widget.selectedPlanIds[i];
+        }
+      } else {
+        request.fields['planning_id[0]'] = '0';
       }
 
       var multipartFile = http.MultipartFile.fromBytes(
@@ -153,7 +160,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
-      debugPrint(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         final Map<String, dynamic> dataPayload = jsonResponse['data'] ?? {};
@@ -232,15 +238,12 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.black12),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "Reporting Project Selection:",
+                      "Reporting Duty / Project Title:",
                       style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
@@ -267,9 +270,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
                             color: themeColor,
                             width: 3.5,
                           ),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 3)),
-                          ],
                           image: _selfieImageBytes != null
                               ? DecorationImage(
                                   image: MemoryImage(_selfieImageBytes!),
@@ -288,7 +288,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      "Tap preview circle to record confirmation photo",
+                      "Tap circle to record photo",
                       style: TextStyle(color: Colors.black54, fontSize: 12),
                     ),
                   ],
@@ -442,7 +442,7 @@ class _CameraPreviewDialogState extends State<_CameraPreviewDialog> {
                         Navigator.pop(context, image);
                       }
                     } catch (e) {
-                      debugPrint("Error taking picture: $e");
+                      debugPrint("Error taking photo: $e");
                     }
                   },
                   child: const Icon(Icons.camera_alt, color: Colors.white),

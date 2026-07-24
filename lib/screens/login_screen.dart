@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'worksite_screen.dart';
@@ -54,8 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final authData = jsonDecode(authResponse.body);
       final String token = authData['token'];
       final String employeeId = authData['employee_id']?.toString() ?? email;
-      final String workerId = authData['worker_id']?.toString() ?? email;
+      final String workerId = authData['worker_id']?.toString() ?? '';
       final String workerName = authData['name']?.toString() ?? email;
+      final int userRole = int.tryParse(authData['role']?.toString() ?? '0') ?? 0;
 
       final planningsResponse = await http
           .post(
@@ -71,41 +71,28 @@ class _LoginScreenState extends State<LoginScreen> {
         final Map<String, dynamic> responseData = jsonDecode(planningsResponse.body);
         final Map<String, dynamic> dataPayload = responseData['data'] ?? {};
 
-        // Parse pending previous signouts count
         int pendingCount = int.tryParse(dataPayload['pending_previous_signouts_count']?.toString() ?? '0') ?? 0;
 
         final List<dynamic> planningsList = dataPayload['plannings'] ?? [];
         List<Map<String, dynamic>> parsedPlans = planningsList.map((item) {
           return {
             "id": item['id'].toString(),
-            "title": item['title'] ?? "Unnamed Plan",
+            "title": item['title'] ?? "Unnamed Task",
           };
         }).toList();
 
         final List<dynamic> markingsList = dataPayload['today_markings'] ?? [];
         List<Map<String, dynamic>> parsedMarkings = markingsList.map((item) {
           return {
-            "title": item['title'] ?? "Work Plan",
+            "id": item['id'], 
+            "planning_id": item['planning_id'] ?? item['plan_id'], 
+            "title": item['title'] ?? "General Duty",
             "in_time": item['in_time'],
             "out_time": item['out_time'],
           };
         }).toList();
 
         int activeAttendanceId = int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ?? 0;
-
-        String? attendanceInTime = dataPayload['in_time']?.toString();
-        if (activeAttendanceId > 0 && attendanceInTime != null) {
-          try {
-            DateTime checkInDate = DateTime.parse(attendanceInTime).toLocal();
-            DateTime today = DateTime.now();
-
-            if (checkInDate.year != today.year ||
-                checkInDate.month != today.month ||
-                checkInDate.day != today.day) {
-              activeAttendanceId = 0;
-            }
-          } catch (_) {}
-        }
 
         List<String> activePlanningIds = [];
         if (activeAttendanceId > 0) {
@@ -126,6 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 employeeId: employeeId,
                 workerId: workerId,
                 workerName: workerName,
+                userRole: userRole,
                 userToken: token,
                 availablePlans: parsedPlans,
                 todayMarkings: parsedMarkings,
