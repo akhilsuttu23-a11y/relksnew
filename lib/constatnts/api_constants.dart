@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URL
-  static const String baseUrl = "https://dev.relkselectricpower.com/api";
+  static const String baseUrl = "https://dev.relkspower.com/api";
 
   // Endpoints
   static const String login = "$baseUrl/login";
