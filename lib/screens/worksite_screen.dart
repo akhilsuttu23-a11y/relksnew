@@ -507,8 +507,10 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                           _selectedPlanIds.any((id) => id != planId);
                       final bool hasOtherCheckedIn =
                           _globallyActiveIds.any((id) => id != planId);
+                      final bool isCurrentPlanCheckedIn =
+                          _globallyActiveIds.contains(planId);
                       final bool isCheckboxDisabled =
-                          hasOtherSelected || hasOtherCheckedIn;
+                          hasOtherSelected || hasOtherCheckedIn || isCurrentPlanCheckedIn;
 
                       return CheckboxListTile(
                         contentPadding: const EdgeInsets.symmetric(
