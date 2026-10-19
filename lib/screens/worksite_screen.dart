@@ -41,6 +41,7 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
   late List<Map<String, dynamic>> _allLogs;
   late List<String> _globallyActiveIds;
   late int _pendingSignoutsCount;
+  late List<Map<String, dynamic>> _availablePlans;
 
   @override
   void initState() {
@@ -51,16 +52,21 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
     _globallyActiveIds = widget.initialActivePlanningIds
         .map((e) => e.toString())
         .toList();
+    _availablePlans = List<Map<String, dynamic>>.from(widget.availablePlans);
 
     if (_globallyActiveIds.isNotEmpty) {
       _selectedPlanIds = [_globallyActiveIds.first];
     } else {
       _selectedPlanIds = [];
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshData();
+    });
   }
 
   bool get _hasTaskAccess {
-    return widget.userRole == 3 || widget.userRole == 4;
+    return true;
   }
 
   bool get _isWorker {
@@ -94,11 +100,15 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
     // 2. Manager (Role 3) Case
     if (_selectedPlanIds.isEmpty) {
       bool hasActiveGeneralDuty = _allLogs.any((log) {
-        bool isUnclosed = log['out_time'] == null || log['out_time'].toString().trim().isEmpty;
+        bool isUnclosed =
+            log['out_time'] == null ||
+            log['out_time'].toString().trim().isEmpty;
         dynamic pId = log['planning_id'];
         String t = (log['title'] ?? '').toString().trim();
-        
-        bool isGeneralDuty = (pId == null || pId.toString() == '0' || pId.toString().isEmpty) || t == "General Duty";
+
+        bool isGeneralDuty =
+            (pId == null || pId.toString() == '0' || pId.toString().isEmpty) ||
+            t == "General Duty";
         return isUnclosed && isGeneralDuty;
       });
 
@@ -146,22 +156,53 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
     }
   }
 
+  String _formatDateDisplay(dynamic dateString) {
+    if (dateString == null) return 'N/A';
+    try {
+      String dateStr = dateString.toString().trim();
+      DateTime parsed = DateTime.parse(dateStr).toLocal();
+
+      String day = parsed.day.toString().padLeft(2, '0');
+      String month = parsed.month.toString().padLeft(2, '0');
+      String year = parsed.year.toString();
+      String datePart = "$day-$month-$year";
+
+      if (dateStr.length > 10) {
+        int hourInt = parsed.hour;
+        String period = hourInt >= 12 ? 'PM' : 'AM';
+        hourInt = hourInt % 12;
+        if (hourInt == 0) hourInt = 12;
+        String hour = hourInt.toString().padLeft(2, '0');
+        String minute = parsed.minute.toString().padLeft(2, '0');
+        return "$datePart $hour:$minute $period";
+      }
+
+      return datePart;
+    } catch (_) {
+      return dateString.toString();
+    }
+  }
+
   String _parseMarkingTitle(Map<String, dynamic> marking) {
-    String? foundTitle = marking['title'] ??
+    String? foundTitle =
+        marking['title'] ??
         marking['project_name'] ??
         marking['plan_title'] ??
         marking['task_title'] ??
         marking['planning_name'] ??
         marking['work_title'];
 
-    if (foundTitle != null && foundTitle.isNotEmpty && foundTitle != "General Duty") {
+    if (foundTitle != null &&
+        foundTitle.isNotEmpty &&
+        foundTitle != "General Duty") {
       return foundTitle;
     }
 
-    final dynamic planIdFromMarking = marking['planning_id'] ?? marking['plan_id'];
+    final dynamic planIdFromMarking =
+        marking['planning_id'] ?? marking['plan_id'];
     if (planIdFromMarking != null && planIdFromMarking.toString() != '0') {
       try {
-        final matchedPlan = widget.availablePlans.firstWhere(
+        final matchedPlan = _availablePlans.firstWhere(
           (p) => p['id'].toString() == planIdFromMarking.toString(),
           orElse: () => {},
         );
@@ -181,15 +222,21 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
   Widget build(BuildContext context) {
     final bool isSignOutAction = _isCurrentActionSignOut;
     final displayLogs = _todayLogs;
-    final bool hasActiveShift = _globallyActiveIds.isNotEmpty || _attendanceId > 0;
-    final bool showTaskList = _hasTaskAccess && widget.availablePlans.isNotEmpty;
+    final bool hasActiveShift =
+        _globallyActiveIds.isNotEmpty || _attendanceId > 0;
+    final bool showTaskList = _hasTaskAccess && _availablePlans.isNotEmpty;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       appBar: AppBar(
         title: Text(
           isSignOutAction ? "Active Shift Detail" : "Attendance Marking",
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         actions: [
           IconButton(
@@ -205,18 +252,26 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.all(screenWidth < 350 ? 12.0 : 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.account_circle_rounded, color: Color(0xFF1E6FD9), size: 30),
+                  const Icon(
+                    Icons.account_circle_rounded,
+                    color: Color(0xFF1E6FD9),
+                    size: 30,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       "User: ${widget.workerName} ($_roleName)",
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E1F21)),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E1F21),
+                      ),
                     ),
                   ),
                 ],
@@ -226,18 +281,26 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isSignOutAction ? Colors.red.shade50 : Colors.blue.shade50,
+                  color: isSignOutAction
+                      ? Colors.red.shade50
+                      : Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSignOutAction ? Colors.red.shade300 : Colors.blue.shade300,
+                    color: isSignOutAction
+                        ? Colors.red.shade300
+                        : Colors.blue.shade300,
                     width: 1.5,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      isSignOutAction ? Icons.logout_rounded : Icons.check_circle_outline_rounded,
-                      color: isSignOutAction ? Colors.red.shade800 : Colors.blue.shade800,
+                      isSignOutAction
+                          ? Icons.logout_rounded
+                          : Icons.check_circle_outline_rounded,
+                      color: isSignOutAction
+                          ? Colors.red.shade800
+                          : Colors.blue.shade800,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -248,7 +311,9 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
-                          color: isSignOutAction ? Colors.red.shade900 : Colors.blue.shade900,
+                          color: isSignOutAction
+                              ? Colors.red.shade900
+                              : Colors.blue.shade900,
                         ),
                       ),
                     ),
@@ -259,20 +324,34 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
               if (_pendingSignoutsCount > 0) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.amber.shade50,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade700, width: 1.2),
+                    border: Border.all(
+                      color: Colors.amber.shade700,
+                      width: 1.2,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900, size: 24),
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.amber.shade900,
+                        size: 24,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           "Warning: You have $_pendingSignoutsCount pending sign-out(s) from previous days.",
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.amber.shade900),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.amber.shade900,
+                          ),
                         ),
                       ),
                     ],
@@ -284,60 +363,208 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
 
               if (showTaskList) ...[
                 Text(
-                  isSignOutAction ? "Your Active Task:" : "Select Task / Project: ${_isWorker ? '*' : ''}",
-                  style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600),
+                  isSignOutAction
+                      ? "Your Active Task:"
+                      : "Select Task / Project: ${_isWorker ? '*' : ''}",
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  height: 180,
+                  height: (screenHeight * 0.35).clamp(180.0, 300.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.black12),
                   ),
                   child: ListView.separated(
-                    itemCount: widget.availablePlans.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.black12),
+                    itemCount: _availablePlans.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1, color: Colors.black12),
                     itemBuilder: (context, index) {
-                      final plan = widget.availablePlans[index];
+                      final plan = _availablePlans[index];
                       final String planId = plan['id'].toString();
                       final bool isChecked = _selectedPlanIds.contains(planId);
-                      final bool isAlreadyCheckedIn = _globallyActiveIds.contains(planId);
+                      final bool isAlreadyCheckedIn = _globallyActiveIds
+                          .contains(planId);
 
-                      final String planTitle = plan['title'] ??
+                      final String planTitle =
+                          plan['title'] ??
                           plan['project_name'] ??
                           plan['plan_title'] ??
                           plan['name'] ??
                           "Task #$planId";
 
+                      final String? projectName = plan['project_name']
+                          ?.toString();
+                      final String? scheduledByUser = plan['scheduled_by_user']
+                          ?.toString();
+                      final String? scheduledDate = plan['scheduled_date']
+                          ?.toString();
+                      final String? dueDate = plan['due_date']?.toString();
+
+                      List<Widget> subtitles = [];
+                      subtitles.add(
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.folder,
+                              size: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                projectName ?? 'N/A',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      subtitles.add(
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                "Scheduled Date: ${_formatDateDisplay(scheduledDate)}",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      subtitles.add(
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.flag,
+                              size: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                "Due: ${_formatDateDisplay(dueDate)}",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (scheduledByUser != null &&
+                          scheduledByUser.isNotEmpty) {
+                        subtitles.add(
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person,
+                                size: 14,
+                                color: Colors.grey.shade700,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  "Scheduled by: $scheduledByUser",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final bool hasOtherSelected =
+                          _selectedPlanIds.any((id) => id != planId);
+                      final bool hasOtherCheckedIn =
+                          _globallyActiveIds.any((id) => id != planId);
+                      final bool isCheckboxDisabled =
+                          hasOtherSelected || hasOtherCheckedIn;
+
                       return CheckboxListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 4.0,
+                          vertical: 4.0,
+                        ),
+                        horizontalTitleGap: 8.0,
+                        visualDensity: VisualDensity.compact,
                         title: Text(
                           planTitle,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: isAlreadyCheckedIn ? const Color(0xFFD9222A) : const Color(0xFF1E1F21),
+                            color: isAlreadyCheckedIn
+                                ? const Color(0xFFD9222A)
+                                : const Color(0xFF1E1F21),
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
-                        activeColor: isAlreadyCheckedIn ? const Color(0xFFD9222A) : const Color(0xFF1E6FD9),
-                        value: isChecked,
+                        subtitle: subtitles.isNotEmpty
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: subtitles,
+                              )
+                            : null,
+                        activeColor: isAlreadyCheckedIn
+                            ? const Color(0xFFD9222A)
+                            : const Color(0xFF1E6FD9),
                         controlAffinity: ListTileControlAffinity.leading,
-                        onChanged: (bool? checked) {
-                          if (_isWorker && hasActiveShift && !isAlreadyCheckedIn && checked == true) {
+                        value: isChecked,
+                        onChanged: isCheckboxDisabled
+                            ? null
+                            : (bool? value) {
+                          if (value == null) return;
+
+                          if (!value &&
+                              _isWorker &&
+                              _selectedPlanIds.length <= 1) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text("Action Blocked: Please sign out of your current active task before switching to another."),
-                                backgroundColor: Colors.redAccent,
+                                content: Text(
+                                  "Workers must select at least one task.",
+                                ),
                               ),
                             );
                             return;
                           }
 
                           setState(() {
-                            if (checked == true) {
-                              _selectedPlanIds = [planId];
+                            if (value) {
+                              if (!_selectedPlanIds.contains(planId)) {
+                                _selectedPlanIds.add(planId);
+                              }
                             } else {
-                              _selectedPlanIds.clear();
+                              _selectedPlanIds.remove(planId);
                             }
                           });
                         },
@@ -355,14 +582,21 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFF1E6FD9)),
+                      const Icon(
+                        Icons.assignment_turned_in_outlined,
+                        color: Color(0xFF1E6FD9),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           !_hasTaskAccess
                               ? "General Duty Attendance for $_roleName"
                               : "No active tasks assigned. Proceed with General Duty.",
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
                     ],
@@ -385,6 +619,23 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                   onPressed: () async {
                     final bool isCheckIn = !isSignOutAction;
 
+                    if (!isSignOutAction &&
+                        (_pendingSignoutsCount > 0 || hasActiveShift)) {
+                      String message =
+                          "Please sign out from your current active shift before checking in.";
+                      if (_pendingSignoutsCount > 0) {
+                        message =
+                            "You have $_pendingSignoutsCount pending sign-out(s) from previous days. Please sign out first.";
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(message),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+
                     if (_isWorker && _selectedPlanIds.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -402,7 +653,9 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                     if (isCheckIn && _isWorker && hasActiveShift) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("Action Blocked: You must sign out of your current active task first."),
+                          content: Text(
+                            "Action Blocked: You must sign out of your current active task first.",
+                          ),
                           backgroundColor: Colors.redAccent,
                         ),
                       );
@@ -411,11 +664,12 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
 
                     String selectedTitle = "General Duty / Duty Attendance";
                     if (_selectedPlanIds.isNotEmpty && showTaskList) {
-                      final selectedPlan = widget.availablePlans.firstWhere(
+                      final selectedPlan = _availablePlans.firstWhere(
                         (p) => p['id'].toString() == _selectedPlanIds.first,
                         orElse: () => {'title': 'General Duty'},
                       );
-                      selectedTitle = selectedPlan['title'] ??
+                      selectedTitle =
+                          selectedPlan['title'] ??
                           selectedPlan['project_name'] ??
                           selectedPlan['plan_title'] ??
                           selectedPlan['name'] ??
@@ -424,27 +678,41 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
 
                     int effectiveAttendanceId = 0;
                     if (isSignOutAction) {
-                      if (_selectedPlanIds.isEmpty) { 
+                      if (_selectedPlanIds.isEmpty) {
                         try {
                           final genLog = _allLogs.firstWhere((log) {
-                            bool isUnclosed = log['out_time'] == null || log['out_time'].toString().trim().isEmpty;
+                            bool isUnclosed =
+                                log['out_time'] == null ||
+                                log['out_time'].toString().trim().isEmpty;
                             dynamic pId = log['planning_id'];
                             String t = (log['title'] ?? '').toString().trim();
-                            bool isGen = (pId == null || pId.toString() == '0' || pId.toString().isEmpty) || t == "General Duty";
+                            bool isGen =
+                                (pId == null ||
+                                    pId.toString() == '0' ||
+                                    pId.toString().isEmpty) ||
+                                t == "General Duty";
                             return isUnclosed && isGen;
                           });
-                          effectiveAttendanceId = int.tryParse(genLog['id']?.toString() ?? '0') ?? _attendanceId;
+                          effectiveAttendanceId =
+                              int.tryParse(genLog['id']?.toString() ?? '0') ??
+                              _attendanceId;
                         } catch (_) {
                           effectiveAttendanceId = _attendanceId;
                         }
-                      } else { // Task Sign-Out Target ID
+                      } else {
+                        // Task Sign-Out Target ID
                         try {
                           final taskLog = _allLogs.firstWhere((log) {
-                            bool isUnclosed = log['out_time'] == null || log['out_time'].toString().trim().isEmpty;
+                            bool isUnclosed =
+                                log['out_time'] == null ||
+                                log['out_time'].toString().trim().isEmpty;
                             dynamic pId = log['planning_id'];
-                            return isUnclosed && pId.toString() == _selectedPlanIds.first;
+                            return isUnclosed &&
+                                pId.toString() == _selectedPlanIds.first;
                           });
-                          effectiveAttendanceId = int.tryParse(taskLog['id']?.toString() ?? '0') ?? _attendanceId;
+                          effectiveAttendanceId =
+                              int.tryParse(taskLog['id']?.toString() ?? '0') ??
+                              _attendanceId;
                         } catch (_) {
                           effectiveAttendanceId = _attendanceId;
                         }
@@ -474,18 +742,28 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        isSignOutAction ? "PROCEED TO SYSTEM SIGN-OUT" : "PROCEED TO SYSTEM SIGN-IN",
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15),
+                        isSignOutAction
+                            ? "PROCEED TO SYSTEM SIGN-OUT"
+                            : "PROCEED TO SYSTEM SIGN-IN",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Icon(
-                        isSignOutAction ? Icons.logout_rounded : Icons.login_rounded,
+                        isSignOutAction
+                            ? Icons.logout_rounded
+                            : Icons.login_rounded,
                         color: Colors.white,
                         size: 18,
                       ),
@@ -499,11 +777,19 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
 
               Row(
                 children: [
-                  const Icon(Icons.history_toggle_off_rounded, color: Color(0xFF1E6FD9), size: 22),
+                  const Icon(
+                    Icons.history_toggle_off_rounded,
+                    color: Color(0xFF1E6FD9),
+                    size: 22,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     "Shift Log History (${displayLogs.length})",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E1F21)),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF1E1F21),
+                    ),
                   ),
                 ],
               ),
@@ -519,21 +805,147 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                       child: const Text(
                         "No matching attendance logs recorded today.",
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black45, fontSize: 13, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          color: Colors.black45,
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     )
                   : ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: displayLogs.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 8),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final marking = displayLogs[index];
-                        final bool isActiveLog = marking['out_time'] == null || marking['out_time'].toString().trim().isEmpty;
+                        final bool isActiveLog =
+                            marking['out_time'] == null ||
+                            marking['out_time'].toString().trim().isEmpty;
                         final String itemTitle = _parseMarkingTitle(marking);
 
+                        final List<dynamic>? markingPlannings =
+                            marking['plannings'] as List<dynamic>?;
+                        final Map<String, dynamic>? planningInfo =
+                            markingPlannings?.isNotEmpty == true
+                            ? Map<String, dynamic>.from(
+                                markingPlannings!.first as Map,
+                              )
+                            : null;
+                        final String? projectName =
+                            marking['project_name']?.toString() ??
+                            planningInfo?['project_name']?.toString();
+                        final String? scheduledByUser =
+                            marking['scheduled_by_user']?.toString() ??
+                            planningInfo?['scheduled_by_user']?.toString();
+                        final String? scheduledDate =
+                            planningInfo?['scheduled_date']?.toString();
+                        final String? dueDate = planningInfo?['due_date']
+                            ?.toString();
+
+                        List<Widget> extraInfo = [];
+                        extraInfo.add(
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.folder,
+                                size: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  projectName ?? 'N/A',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        extraInfo.add(
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  "Scheduled Date: ${_formatDateDisplay(scheduledDate)}",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        extraInfo.add(
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.flag,
+                                size: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  "Due: ${_formatDateDisplay(dueDate)}",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (scheduledByUser != null &&
+                            scheduledByUser.isNotEmpty) {
+                          extraInfo.add(
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  size: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    "Scheduled by: $scheduledByUser",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -542,34 +954,76 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(itemTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text(
+                                itemTitle,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                              if (extraInfo.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: extraInfo,
+                                ),
+                              ],
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.green.shade50,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.green.shade200),
+                                      border: Border.all(
+                                        color: Colors.green.shade200,
+                                      ),
                                     ),
                                     child: Text(
                                       "IN: ${_formatDateTimeString(marking['in_time'])}",
-                                      style: TextStyle(color: Colors.green.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                        color: Colors.green.shade800,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isActiveLog ? Colors.red.shade50 : Colors.orange.shade50,
+                                      color: isActiveLog
+                                          ? Colors.red.shade50
+                                          : Colors.orange.shade50,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: isActiveLog ? Colors.red.shade200 : Colors.orange.shade200),
+                                      border: Border.all(
+                                        color: isActiveLog
+                                            ? Colors.red.shade200
+                                            : Colors.orange.shade200,
+                                      ),
                                     ),
                                     child: Text(
-                                      isActiveLog ? "ACTIVE SHIFT" : "OUT: ${_formatDateTimeString(marking['out_time'])}",
-                                      style: TextStyle(color: isActiveLog ? Colors.red.shade800 : Colors.orange.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                                      isActiveLog
+                                          ? "ACTIVE SHIFT"
+                                          : "OUT: ${_formatDateTimeString(marking['out_time'])}",
+                                      style: TextStyle(
+                                        color: isActiveLog
+                                            ? Colors.red.shade800
+                                            : Colors.orange.shade800,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -587,6 +1041,7 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
   }
 
   Future<void> _refreshData() async {
+    debugPrint("DEBUG _refreshData called");
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -607,33 +1062,75 @@ class _SelectWorksiteScreenState extends State<SelectWorksiteScreen> {
 
       if (mounted) Navigator.pop(context);
 
-      if (planningsResponse.statusCode == 200 && planningsResponse.body.isNotEmpty) {
+      if (planningsResponse.statusCode == 200 &&
+          planningsResponse.body.isNotEmpty) {
         try {
-          final Map<String, dynamic> responseData = jsonDecode(planningsResponse.body);
+          final Map<String, dynamic> responseData = jsonDecode(
+            planningsResponse.body,
+          );
           final Map<String, dynamic> dataPayload = responseData['data'] ?? {};
-          final List<dynamic> markingsList = dataPayload['today_markings'] ?? [];
+          final List<dynamic> markingsList =
+              dataPayload['today_markings'] ?? [];
+
+          debugPrint("DEBUG API Response: ${planningsResponse.body}");
+          debugPrint("DEBUG dataPayload: $dataPayload");
+          debugPrint("DEBUG plannings: ${dataPayload['plannings']}");
+          debugPrint("DEBUG projects: ${dataPayload['projects']}");
 
           List<Map<String, dynamic>> parsedMarkings = markingsList.map((item) {
-            Map<String, dynamic> itemMap = Map<String, dynamic>.from(item as Map);
+            Map<String, dynamic> itemMap = Map<String, dynamic>.from(
+              item as Map,
+            );
             return {
               ...itemMap,
               "id": itemMap['id'], // Grab explicit ID
-              "planning_id": itemMap['planning_id'] ?? itemMap['plan_id'], // Grab explicit Task ID
-              "title": itemMap['title'] ?? itemMap['project_name'] ?? itemMap['plan_title'] ?? itemMap['task_title'] ?? itemMap['planning_name'] ?? itemMap['work_title'] ?? 'General Duty',
+              "planning_id":
+                  itemMap['planning_id'] ??
+                  itemMap['plan_id'], // Grab explicit Task ID
+              "title":
+                  itemMap['title'] ??
+                  itemMap['project_name'] ??
+                  itemMap['plan_title'] ??
+                  itemMap['task_title'] ??
+                  itemMap['planning_name'] ??
+                  itemMap['work_title'] ??
+                  'General Duty',
               "in_time": itemMap['in_time'],
               "out_time": itemMap['out_time'],
             };
           }).toList();
 
-          int activeAttendanceId = int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ?? 0;
-          int pendingCount = int.tryParse(dataPayload['pending_previous_signouts_count']?.toString() ?? '0') ?? 0;
-          List<String> activePlanningIds = List<String>.from((dataPayload['active_planning_ids'] as List? ?? []).map((e) => e.toString()));
+          int activeAttendanceId =
+              int.tryParse(dataPayload['attendance_id']?.toString() ?? '0') ??
+              0;
+          int pendingCount =
+              int.tryParse(
+                dataPayload['pending_previous_signouts_count']?.toString() ??
+                    '0',
+              ) ??
+              0;
+          List<String> activePlanningIds = List<String>.from(
+            (dataPayload['active_planning_ids'] as List? ?? []).map(
+              (e) => e.toString(),
+            ),
+          );
+          List<Map<String, dynamic>> plans = List<Map<String, dynamic>>.from(
+            (dataPayload['plannings'] as List? ?? []).map(
+              (item) => Map<String, dynamic>.from(item as Map),
+            ),
+          );
+
+          debugPrint("DEBUG parsed plans: $plans");
+          debugPrint("DEBUG _hasTaskAccess: $_hasTaskAccess");
+          debugPrint("DEBUG plans.isEmpty: ${plans.isEmpty}");
+          debugPrint("DEBUG _availablePlans after setState will be: $plans");
 
           setState(() {
             _attendanceId = activeAttendanceId;
             _pendingSignoutsCount = pendingCount;
             _globallyActiveIds = activePlanningIds;
             _allLogs = parsedMarkings;
+            _availablePlans = plans;
 
             if (_globallyActiveIds.isNotEmpty) {
               _selectedPlanIds = [_globallyActiveIds.first];

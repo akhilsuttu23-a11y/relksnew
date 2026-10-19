@@ -61,6 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
           .post(
             Uri.parse(getPlansUrl),
             headers: {
+              "Content-Type": "application/json",
               "Accept": "application/json",
               "Authorization": "Bearer $token",
             },
@@ -125,8 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       } else {
+        debugPrint("DEBUG detailsProduct error ${planningsResponse.statusCode}: ${planningsResponse.body}");
         _showMsg(
-          "Server error (${planningsResponse.statusCode}) loading details.",
+          "Server error (${planningsResponse.statusCode}) loading details: ${planningsResponse.body}",
           isError: true,
         );
       }

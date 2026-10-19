@@ -165,27 +165,25 @@ class _CheckInScreenState extends State<CheckInScreen> {
         final Map<String, dynamic> dataPayload = jsonResponse['data'] ?? {};
 
         if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              title: const Text("Success"),
-              content: Text(widget.attendanceId > 0 ? "Check-Out complete!" : "Check-In complete!"),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.pop(context, dataPayload); 
-                  },
-                  child: const Text("OK"),
-                ),
-              ],
-            ),
+          await _showStyledDialog(
+            title: "Success",
+            message: widget.attendanceId > 0 ? "Check-Out complete!" : "Check-In complete!",
+            icon: Icons.check_circle_rounded,
+            iconColor: const Color(0xFF1FA84A),
+            iconBgColor: const Color(0xFFE7F7EC),
+            result: dataPayload,
           );
+          if (mounted) Navigator.pop(context, dataPayload);
         }
       } else {
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
-        await _showErrorDialog(errorData['message'] ?? "Error processing submission.");
+        String errorMsg = "Error processing submission.";
+        try {
+          final dynamic errorBody = jsonDecode(response.body);
+          if (errorBody is Map && errorBody['message'] != null) {
+            errorMsg = errorBody['message'].toString();
+          }
+        } catch (_) {}
+        await _showErrorDialog(errorMsg);
       }
     } catch (e) {
       await _showErrorDialog("Network action error: $e");
@@ -195,17 +193,84 @@ class _CheckInScreenState extends State<CheckInScreen> {
   }
 
   Future<void> _showErrorDialog(String msg) async {
-    return showDialog(
+    await _showStyledDialog(
+      title: "Error",
+      message: msg,
+      icon: Icons.error_outline_rounded,
+      iconColor: const Color(0xFFD9222A),
+      iconBgColor: const Color(0xFFFDECEC),
+    );
+  }
+
+  Future<T?> _showStyledDialog<T>({
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    T? result,
+  }) async {
+    return showDialog<T>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Alert"),
-        content: Text(msg),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("OK"),
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 34),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E1F21),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, result),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: iconColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    "OK",
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
